@@ -2,6 +2,9 @@
 #include <string.h>
 
 #include "hash_table.h"
+#include "prime.c"
+
+
 
 static ht_item* ht_new_item (const char* k, const char* v){
     ht_item* i = malloc(sizeof(ht_hash_table));
@@ -10,13 +13,8 @@ static ht_item* ht_new_item (const char* k, const char* v){
     return i;
 }
 
-ht_hash_table* new_ht(){
-    ht_hash_table* ht = malloc(sizeof(ht_hash_table));
-
-    ht->size = 53;
-    ht->count = 0;
-    ht->items = calloc((size_t)ht->size, sizeof(ht_item*));
-    return ht;
+ht_hash_table* ht_new(){
+    ht_new_sized(8);
 }
 
 static void ht_del_item (ht_item* i){
@@ -41,17 +39,21 @@ static int ht_hash(const char* s, const int a, const int m){
     long hash = 0;
     const int len_s = strlen(s);
     for (int i = 0; i < len_s; i++){
-        hash += (long)pow(a, len_s -(i+1) * s[i]);
+        hash += (long)pow(a, (len_s -(i+1))) * s[i];
         hash = hash % m;
     }
     return hash;
 }
 
+
+
 static int ht_get_hash(const char* s, const int num_buckets, const int attemp){
-    const int hash_a = ht_hash(s, HT_PRIME_1, num_buckets);
-    const int hash_b = ht_hash(s, HT_PRIME_2, num_buckets);
+    const int hash_a = ht_hash(s, 151, num_buckets); //maybe add diffrent primes here
+    const int hash_b = ht_hash(s, 163, num_buckets); // and here
     return (hash_a + (attemp * (hash_b + 1))) % num_buckets;
 }
+
+
 
 
 void ht_insert(ht_hash_table* ht, const char* key, const char* value){
@@ -109,4 +111,14 @@ void ht_delete (ht_hash_table* ht, const char* key){
         i++; 
     }
     ht->count--;
+}
+
+static ht_hash_table* ht_new_sized(const int base_size)  {
+    ht_hash_table* ht = xmalloc(sizeof(ht_hash_table));
+    ht->base_size = base_size;
+
+    ht->size = next_prime(base_size);
+    ht->count = 0;
+    ht->items = xcalloc((size_t)ht->size, sizeof(ht_item*));
+    return ht;
 }
